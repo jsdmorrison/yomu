@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>YOMU - N5 Reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;500&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#030912;color:#f1f5f9;font-family:Inter,"Noto Sans JP",sans-serif;min-height:100vh}
+#app{max-width:560px;margin:0 auto;padding:0 20px 80px}
+.hdr{padding:32px 0 24px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-jp{font-size:22px;color:#818cf8;font-family:"Noto Serif JP",serif}
+.logo-div{width:1px;height:18px;background:#1e293b}
+.logo-en{font-size:11px;color:#1e3a5f;letter-spacing:3px;text-transform:uppercase;font-weight:600}
+.badge{background:#0f172a;border:1px solid #4f46e5;border-radius:8px;padding:5px 12px;font-size:11px;color:#6366f1;font-weight:700;letter-spacing:1px}
+/* Cards */
+.card{background:linear-gradient(135deg,#080e1a,#0f172a);border:1px solid #1e293b;border-radius:14px;padding:18px 16px;cursor:pointer;transition:border-color 0.2s}
+.card:hover{border-color:#334155}
+.stat-box{background:#0a0f1a;border:1px solid #1e293b;border-radius:14px;padding:18px 20px;margin-bottom:26px}
+.stat-row{display:flex;gap:18px;margin-bottom:14px}
+.stat{flex:1}.stat-label{font-size:10px;letter-spacing:2px;color:#334155;text-transform:uppercase;margin-bottom:4px}
+.stat-val{font-size:26px;font-weight:900;color:#f1f5f9}
+.stat-val.v{color:#818cf8}.stat-val.g{color:#4ade80}
+.prog-bar{height:4px;background:#1e293b;border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;transition:width 0.5s}
+.prog-label{font-size:10px;color:#334155;margin-top:5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Unit card */
+.uc-icon{font-size:28px;margin-bottom:10px}
+.uc-title{font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:2px}
+.uc-ja{font-size:11px;color:#475569;font-family:"Noto Sans JP",sans-serif;margin-bottom:10px}
+.uc-prog{display:flex;align-items:center;gap:6px}
+.uc-prog-bar{flex:1;height:3px;background:#1e293b;border-radius:2px;overflow:hidden}
+.uc-prog-fill{height:100%;border-radius:2px}
+.uc-prog-label{font-size:10px;color:#475569}
+/* Passage list */
+.back-btn{background:none;border:none;color:#475569;cursor:pointer;font-size:13px;padding:0 0 20px;display:block}
+.unit-hdr{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.unit-icon{font-size:36px}
+.unit-title{font-size:22px;font-weight:800;color:#f1f5f9}
+.unit-ja{font-size:13px;color:#64748b;font-family:"Noto Sans JP",sans-serif}
+.prog-section{background:#0a0f1a;border:1px solid #1e293b;border-radius:12px;padding:14px 18px;margin-bottom:24px}
+.plist{display:flex;flex-direction:column;gap:8px}
+.pitem{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#0a0f1a,#0f172a);border:1px solid #1e293b;border-radius:12px;padding:14px 18px;cursor:pointer;transition:border-color 0.15s}
+.pitem.done{background:#070d1a}
+.pitem.locked{opacity:0.35;cursor:not-allowed}
+.pnum{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.pitem-title{font-size:14px;font-family:"Noto Serif JP",serif;font-weight:600;color:#f1f5f9}
+.pitem.done .pitem-title{font-weight:400;color:#64748b}
+.pitem.locked .pitem-title{color:#334155}
+.pitem-sub{font-size:11px;color:#334155;margin-top:2px}
+.pitem-arrow{font-size:16px;margin-left:auto}
+/* Reader */
+.reader-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.toolbar-btns{display:flex;gap:8px}
+.tbtn{border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;border:1px solid #334155;background:#1e293b;color:#64748b}
+.tbtn.on{background:#312e81;border-color:#6366f1;color:#a5b4fc}
+.reader-meta{margin-bottom:22px}
+.reader-unit-label{font-size:11px;letter-spacing:3px;color:#334155;text-transform:uppercase;margin-bottom:7px}
+.reader-title{font-size:22px;color:#f1f5f9;font-family:"Noto Serif JP",serif;margin-bottom:2px}
+.reader-en{font-size:13px;color:#64748b}
+.new-words{background:#0a0f1a;border:1px solid #312e81;border-radius:12px;padding:12px 16px;margin-bottom:20px}
+.nw-label{font-size:10px;letter-spacing:2px;color:#6366f1;text-transform:uppercase;margin-bottom:8px;font-weight:700}
+.nw-list{display:flex;flex-wrap:wrap;gap:6px}
+.nw-item{background:#1e1b4b;border:1px solid #4f46e5;border-radius:6px;padding:4px 10px;font-size:13px}
+.nw-word{color:#a5b4fc;font-family:"Noto Serif JP",serif}
+.nw-meaning{color:#475569;font-size:11px;margin-left:6px}
+/* Passage text */
+.passage-box{background:linear-gradient(135deg,#070d1a,#0f172a);border:1px solid #1e293b;border-radius:16px;padding:26px 24px 22px;margin-bottom:20px;line-height:3.4;font-size:19px;font-family:"Noto Serif JP",serif;letter-spacing:0.04em}
+ruby{display:inline;ruby-align:center}
+rt{display:block;text-align:center;font-size:0.42em;color:#64748b;line-height:1.5}
+.w{cursor:pointer;border-radius:4px;padding:1px 2px;border-bottom:1px solid rgba(255,255,255,0.08);transition:background 0.1s}
+.w:hover,.w.sel{background:rgba(251,191,36,0.18)}
+.nw-highlight{border-bottom:2px solid #6366f1;background:rgba(99,102,241,0.1)}
+.pc{color:#cbd5e1}
+/* Grammar note */
+.grammar-btn{background:none;border:1px solid #1e3a5f;border-radius:8px;padding:7px 14px;color:#60a5fa;font-size:12px;cursor:pointer;margin-bottom:10px}
+.grammar-box{background:#0b1829;border:1px solid #1e3a5f;border-radius:10px;padding:13px 16px;font-size:13px;color:#93c5fd;line-height:1.75;margin-bottom:20px}
+/* Buttons */
+.btn-primary{width:100%;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:12px;padding:14px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px}
+.btn-secondary{width:100%;background:#1e293b;border:1px solid #334155;border-radius:12px;padding:14px;color:#94a3b8;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px}
+/* Check */
+.check-passage{background:#070d1a;border:1px solid #1e293b;border-radius:12px;padding:16px 18px;margin-bottom:20px;font-size:16px;font-family:"Noto Serif JP",serif;color:#64748b;line-height:2.6;opacity:0.75}
+.check-label{font-size:11px;letter-spacing:3px;color:#475569;text-transform:uppercase;margin-bottom:14px}
+.qblock{margin-bottom:18px;background:#0a0f1a;border-radius:12px;padding:16px;border:1px solid #1e293b}
+.qjp{font-size:15px;color:#f1f5f9;margin-bottom:3px;font-family:"Noto Serif JP",serif}
+.qen{font-size:12px;color:#475569;margin-bottom:11px}
+.opts{display:flex;flex-direction:column;gap:7px}
+.opt{border-radius:8px;padding:10px 14px;font-size:14px;cursor:pointer;text-align:left;font-family:"Noto Serif JP",sans-serif;transition:all 0.12s;border:1px solid #334155;background:#1e293b;color:#cbd5e1;width:100%}
+.opt.selected{border-color:#6366f1;color:#a5b4fc}
+.opt.correct{background:#14532d;border-color:#4ade80;color:#4ade80}
+.opt.wrong{background:#450a0a;border-color:#f87171;color:#f87171}
+/* Done */
+.done-screen{text-align:center;padding:32px 0}
+.done-emoji{font-size:52px;margin-bottom:10px}
+.done-score{font-size:24px;font-weight:800;color:#f1f5f9;margin-bottom:6px}
+.done-sub{font-size:13px;color:#6366f1;margin-bottom:24px}
+/* Gloss card */
+#gloss{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0f172a;border:1px solid #6366f1;border-radius:16px;padding:16px 22px;min-width:240px;max-width:320px;z-index:100;box-shadow:0 24px 64px rgba(0,0,0,0.7);display:none}
+#gloss.show{display:block;animation:gup 0.2s ease}
+.gloss-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.gloss-word{font-size:30px;color:#f1f5f9;font-family:"Noto Serif JP",serif}
+.gloss-reading{font-size:14px;color:#94a3b8;margin-left:10px}
+.gloss-meaning{font-size:15px;color:#e2e8f0;font-weight:600;margin-top:4px}
+.gloss-close{color:#475569;font-size:20px;cursor:pointer;flex-shrink:0}
+/* Vocab sidebar */
+#vocab-sidebar{position:fixed;right:0;top:0;bottom:0;width:300px;background:#080e1a;border-left:1px solid #1e293b;display:none;flex-direction:column;z-index:200}
+#vocab-sidebar.show{display:flex;animation:slr 0.28s ease}
+.vs-hdr{padding:20px;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center}
+.vs-title{font-size:14px;font-weight:700;color:#f1f5f9}
+.vs-count{font-size:11px;color:#475569;margin-top:2px}
+.vs-close{background:none;border:none;color:#475569;cursor:pointer;font-size:20px}
+.vs-stats{padding:10px 16px;border-bottom:1px solid #1e293b;display:flex;gap:6px}
+.vs-stat{flex:1;text-align:center;padding:7px 4px;background:#0f172a;border-radius:8px}
+.vs-stat-val{font-size:17px;font-weight:800}
+.vs-stat-lbl{font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-top:1px}
+.vs-list{flex:1;overflow-y:auto;padding:6px 14px}
+.vs-item{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #0d1524;gap:10px}
+.vs-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.vs-word{font-size:15px;color:#f1f5f9;font-family:"Noto Serif JP",serif}
+.vs-reading{font-size:11px;color:#64748b;margin-left:6px}
+.vs-meaning{font-size:12px;color:#94a3b8}
+.vs-count-n{font-size:11px;font-weight:700}
+@keyframes gup{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes slr{from{transform:translateX(100%)}to{transform:translateX(0)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="gloss">
+  <div class="gloss-top">
+    <div>
+      <div><span class="gloss-word" id="gw"></span><span class="gloss-reading" id="gr"></span></div>
+      <div class="gloss-meaning" id="gm"></div>
+    </div>
+    <span class="gloss-close" onclick="hideGloss()">&#10005;</span>
+  </div>
+</div>
+<div id="vocab-sidebar">
+  <div class="vs-hdr">
+    <div><div class="vs-title">My Vocabulary</div><div class="vs-count" id="vs-count"></div></div>
+    <button class="vs-close" onclick="hideVocab()">&#10005;</button>
+  </div>
+  <div class="vs-stats" id="vs-stats"></div>
+  <div class="vs-list" id="vs-list"></div>
+</div>
+<script>
+var VOCAB = {"私": ["わたし", "I / me"], "毎日": ["まいにち", "every day"], "毎朝": ["まいあさ", "every morning"], "毎晩": ["まいばん", "every evening"], "今日": ["きょう", "today"], "明日": ["あした", "tomorrow"], "昨日": ["きのう", "yesterday"], "今朝": ["けさ", "this morning"], "先週": ["せんしゅう", "last week"], "来週": ["らいしゅう", "next week"], "今年": ["ことし", "this year"], "朝": ["あさ", "morning"], "昼": ["ひる", "noon / daytime"], "夜": ["よる", "night / evening"], "時間": ["じかん", "time / hour"], "朝ごはん": ["あさごはん", "breakfast"], "夕食": ["ゆうしょく", "dinner"], "昼休み": ["ひるやすみ", "lunch break"], "週末": ["しゅうまつ", "weekend"], "土曜日": ["どようび", "Saturday"], "日曜日": ["にちようび", "Sunday"], "起きる": ["おきる", "to wake up"], "寝る": ["ねる", "to sleep"], "食べる": ["たべる", "to eat"], "飲む": ["のむ", "to drink"], "行く": ["いく", "to go"], "来る": ["くる", "to come"], "帰る": ["かえる", "to return home"], "帰ってくる": ["かえってくる", "to come home"], "見る": ["みる", "to see / watch"], "聞く": ["きく", "to listen"], "話す": ["はなす", "to speak"], "読む": ["よむ", "to read"], "書く": ["かく", "to write"], "買う": ["かう", "to buy"], "乗る": ["のる", "to ride / board"], "降りる": ["おりる", "to get off"], "降る": ["ふる", "to fall (rain/snow)"], "住む": ["すむ", "to live (in a place)"], "歩く": ["あるく", "to walk"], "走る": ["はしる", "to run"], "出る": ["でる", "to leave / exit"], "入る": ["はいる", "to enter"], "洗う": ["あらう", "to wash"], "作る": ["つくる", "to make / cook"], "探す": ["さがす", "to look for"], "見つける": ["みつける", "to find"], "見える": ["みえる", "to be visible"], "着く": ["つく", "to arrive"], "払う": ["はらう", "to pay"], "注文": ["ちゅうもん", "order (food)"], "頼む": ["たのむ", "to order / request"], "座る": ["すわる", "to sit"], "立つ": ["たつ", "to stand"], "曲がる": ["まがる", "to turn"], "迷う": ["まよう", "to get lost"], "慣れる": ["なれる", "to get used to"], "疲れる": ["つかれる", "to get tired"], "始める": ["はじめる", "to begin"], "終わる": ["おわる", "to end"], "続ける": ["つづける", "to continue"], "変わる": ["かわる", "to change"], "かかる": ["かかる", "to take (time)"], "笑う": ["わらう", "to laugh / smile"], "喜ぶ": ["よろこぶ", "to rejoice"], "がんばる": ["がんばる", "to do one's best"], "楽しむ": ["たのしむ", "to enjoy"], "撮る": ["とる", "to take (photo)"], "持つ": ["もつ", "to hold / carry"], "咲く": ["さく", "to bloom"], "使う": ["つかう", "to use"], "おいしい": ["おいしい", "delicious"], "好き": ["すき", "like / favourite"], "大好き": ["だいすき", "really like / love"], "嫌い": ["きらい", "dislike"], "大きい": ["おおきい", "big"], "小さい": ["ちいさい", "small"], "高い": ["たかい", "expensive / tall"], "安い": ["やすい", "cheap"], "新しい": ["あたらしい", "new"], "古い": ["ふるい", "old (thing)"], "近い": ["ちかい", "near"], "遠い": ["とおい", "far"], "暑い": ["あつい", "hot"], "寒い": ["さむい", "cold (weather)"], "涼しい": ["すずしい", "cool"], "暖かい": ["あたたかい", "warm"], "冷たい": ["つめたい", "cold (to touch)"], "やさしい": ["やさしい", "kind / gentle"], "おもしろい": ["おもしろい", "interesting"], "楽しい": ["たのしい", "fun / enjoyable"], "忙しい": ["いそがしい", "busy"], "むずかしい": ["むずかしい", "difficult"], "青い": ["あおい", "blue"], "白い": ["しろい", "white"], "甘い": ["あまい", "sweet"], "強い": ["つよい", "strong"], "こわい": ["こわい", "scary"], "美しい": ["うつくしい", "beautiful"], "きれい": ["きれい", "beautiful / clean"], "便利": ["べんり", "convenient"], "新鮮": ["しんせん", "fresh"], "静か": ["しずか", "quiet"], "元気": ["げんき", "energetic / healthy"], "上手": ["じょうず", "skilled / good at"], "大事": ["だいじ", "important"], "食べ物": ["たべもの", "food"], "料理": ["りょうり", "cooking / dish"], "ご飯": ["ごはん", "rice / meal"], "パン": ["パン", "bread"], "肉": ["にく", "meat"], "魚": ["さかな", "fish"], "野菜": ["やさい", "vegetables"], "果物": ["くだもの", "fruit"], "水": ["みず", "water"], "お茶": ["おちゃ", "tea"], "コーヒー": ["コーヒー", "coffee"], "りんご": ["りんご", "apple"], "味噌汁": ["みそしる", "miso soup"], "ラーメン": ["ラーメン", "ramen"], "カレー": ["カレー", "curry"], "すし": ["すし", "sushi"], "定食": ["ていしょく", "set meal"], "ステーキ": ["ステーキ", "steak"], "パスタ": ["パスタ", "pasta"], "サラダ": ["サラダ", "salad"], "ケーキ": ["ケーキ", "cake"], "サンドイッチ": ["サンドイッチ", "sandwich"], "うどん": ["うどん", "udon noodles"], "てんぷら": ["てんぷら", "tempura"], "すき焼き": ["すきやき", "sukiyaki"], "まぐろ": ["まぐろ", "tuna"], "さんま": ["さんま", "Pacific saury"], "おにぎり": ["おにぎり", "rice ball"], "お弁当": ["おべんとう", "packed lunch"], "じゃがいも": ["じゃがいも", "potato"], "人参": ["にんじん", "carrot"], "玉ねぎ": ["たまねぎ", "onion"], "トマト": ["トマト", "tomato"], "ピーマン": ["ピーマン", "green pepper"], "牛乳": ["ぎゅうにゅう", "milk"], "卵": ["たまご", "egg"], "バター": ["バター", "butter"], "ジャム": ["ジャム", "jam"], "家族": ["かぞく", "family"], "父": ["ちち", "father (own)"], "母": ["はは", "mother (own)"], "兄": ["あに", "older brother"], "姉": ["あね", "older sister"], "弟": ["おとうと", "younger brother"], "妹": ["いもうと", "younger sister"], "子供": ["こども", "child"], "祖父": ["そふ", "grandfather (own)"], "名前": ["なまえ", "name"], "家": ["いえ", "house / home"], "学校": ["がっこう", "school"], "会社": ["かいしゃ", "company / office"], "大学": ["だいがく", "university"], "レストラン": ["レストラン", "restaurant"], "コンビニ": ["コンビニ", "convenience store"], "スーパー": ["スーパー", "supermarket"], "デパート": ["デパート", "department store"], "本屋": ["ほんや", "bookshop"], "図書館": ["としょかん", "library"], "公園": ["こうえん", "park"], "駅": ["えき", "station"], "市場": ["いちば", "market"], "カフェ": ["カフェ", "cafe"], "東京": ["とうきょう", "Tokyo"], "大阪": ["おおさか", "Osaka"], "京都": ["きょうと", "Kyoto"], "電車": ["でんしゃ", "train"], "バス": ["バス", "bus"], "タクシー": ["タクシー", "taxi"], "地下鉄": ["ちかてつ", "subway"], "新幹線": ["しんかんせん", "bullet train"], "自転車": ["じてんしゃ", "bicycle"], "バス停": ["バスてい", "bus stop"], "道": ["みち", "road / path"], "右": ["みぎ", "right direction"], "左": ["ひだり", "left direction"], "地図": ["ちず", "map"], "角": ["かど", "corner"], "坂道": ["さかみち", "slope / hill"], "天気": ["てんき", "weather"], "晴れ": ["はれ", "sunny / clear"], "雨": ["あめ", "rain"], "雪": ["ゆき", "snow"], "風": ["かぜ", "wind"], "雲": ["くも", "cloud"], "空": ["そら", "sky"], "台風": ["たいふう", "typhoon"], "空気": ["くうき", "air"], "天気予報": ["てんきよほう", "weather forecast"], "春": ["はる", "spring"], "夏": ["なつ", "summer"], "秋": ["あき", "autumn"], "冬": ["ふゆ", "winter"], "季節": ["きせつ", "season"], "汗": ["あせ", "sweat"], "桜": ["さくら", "cherry blossom"], "落ち葉": ["おちば", "fallen leaves"], "傘": ["かさ", "umbrella"], "布団": ["ふとん", "futon / bedding"], "店": ["みせ", "shop / store"], "値段": ["ねだん", "price"], "お金": ["おかね", "money"], "お釣り": ["おつり", "change (money)"], "円": ["えん", "yen"], "セール": ["セール", "sale"], "定価": ["ていか", "regular price"], "レジ": ["レじ", "cashier"], "店員": ["てんいん", "store clerk"], "洋服": ["ようふく", "Western clothing"], "服": ["ふく", "clothes"], "シャツ": ["シャツ", "shirt"], "ジャケット": ["ジャケット", "jacket"], "コート": ["コート", "coat"], "スカーフ": ["スカーフ", "scarf"], "プレゼント": ["プレゼント", "present / gift"], "誕生日": ["たんじょうび", "birthday"], "先生": ["せんせい", "teacher"], "授業": ["じゅぎょう", "class / lesson"], "アルバイト": ["アルバイト", "part-time job"], "仕事": ["しごと", "work / job"], "練習": ["れんしゅう", "practice"], "趣味": ["しゅみ", "hobby"], "音楽": ["おんがく", "music"], "写真": ["しゃしん", "photograph"], "ゴルフ": ["ゴルフ", "golf"], "ドラマ": ["ドラマ", "TV drama"], "旅行": ["りょこう", "travel / trip"], "お花見": ["おはなみ", "cherry blossom viewing"], "ピクニック": ["ピクニック", "picnic"], "散歩": ["さんぽ", "walk"], "顔": ["かお", "face"], "歯": ["は", "teeth"], "お風呂": ["おふろ", "bath"], "本": ["ほん", "book"], "雑誌": ["ざっし", "magazine"], "スマホ": ["スマホ", "smartphone"], "テレビ": ["テレビ", "TV"], "窓": ["まど", "window"], "席": ["せき", "seat"], "靴": ["くつ", "shoes"], "メニュー": ["メニュー", "menu"], "少し": ["すこし", "a little"], "たくさん": ["たくさん", "many / a lot"], "全部": ["ぜんぶ", "all / everything"], "だいたい": ["だいたい", "mostly"], "約": ["やく", "approximately"], "特に": ["とくに", "especially"], "いろいろ": ["いろいろ", "various"], "だんだん": ["だんだん", "gradually"], "一番": ["いちばん", "most / number one"], "いつも": ["いつも", "always"], "また": ["また", "again"], "まだ": ["まだ", "still / not yet"], "もう": ["もう", "already"], "やっと": ["やっと", "finally"], "はじめて": ["はじめて", "for the first time"], "ゆっくり": ["ゆっくり", "slowly"], "一日中": ["いちにちじゅう", "all day long"], "前": ["まえ", "before / front"], "後": ["あと", "after / later"], "時": ["とき", "time / when"], "帰り": ["かえり", "return / way back"], "気持ち": ["きもち", "feeling"], "予定": ["よてい", "plan / schedule"], "準備": ["じゅんび", "preparation"], "楽しみ": ["たのしみ", "looking forward to"], "安心": ["あんしん", "peace of mind"], "仲良し": ["なかよし", "close / get along well"], "景色": ["けしき", "scenery"], "料金": ["りょうきん", "fare / fee"], "運転手": ["うんてんしゅ", "driver"], "駅員": ["えきいん", "station staff"], "お寺": ["おてら", "temple"], "庭": ["にわ", "garden"], "夏休み": ["なつやすみ", "summer vacation"], "試食": ["ししょく", "food tasting"], "昔話": ["むかしばなし", "old story / folktale"], "食欲": ["しょくよく", "appetite"], "会社員": ["かいしゃいん", "office worker"], "中学生": ["ちゅうがくせい", "middle school student"], "関係": ["かんけい", "relationship / connection"]};
+var PASSAGES = {"daily": [{"title": "朝ごはん", "en": "Breakfast", "text": "私は毎朝七時に起きます。顔を洗って、朝ごはんを食べます。朝ごはんはいつもパンとコーヒーです。それから、仕事に行きます。", "new": [{"w": "顔", "r": "かお", "m": "face"}, {"w": "洗う", "r": "あらう", "m": "to wash"}, {"w": "いつも", "r": "いつも", "m": "always"}], "qs": [{"q": "何時に起きますか？", "en": "What time do they wake up?", "opts": ["六時", "七時", "八時"], "ans": 1}, {"q": "朝ごはんは何ですか？", "en": "What is breakfast?", "opts": ["ご飯と味噌汁", "パンとコーヒー", "パンとお茶"], "ans": 1}], "note": "Te-form chains actions: 顔を洗って means 'after washing my face.' Connect verbs with te-form to describe morning routines step by step."}, {"title": "一日のはじまり", "en": "Start of the Day", "text": "田中さんは六時半に起きます。シャワーをあびて、服を着ます。朝ごはんはご飯と味噌汁です。八時に家を出て、駅に行きます。", "new": [{"w": "シャワー", "r": "シャワー", "m": "shower"}, {"w": "服", "r": "ふく", "m": "clothes"}, {"w": "味噌汁", "r": "みそしる", "m": "miso soup"}, {"w": "出る", "r": "でる", "m": "to leave / exit"}], "qs": [{"q": "田中さんは何時に起きますか？", "en": "What time does Tanaka wake up?", "opts": ["六時", "六時半", "七時"], "ans": 1}, {"q": "朝ごはんは何ですか？", "en": "What is breakfast?", "opts": ["パンとコーヒー", "ご飯と味噌汁", "パンとお茶"], "ans": 1}], "note": "Te-form chains multiple actions: 家を出て、駅に行きます means 'leaves home and goes to the station.' Each verb uses te-form before the next."}, {"title": "夜のルーティン", "en": "Evening Routine", "text": "私は毎晩十一時ごろ寝ます。寝る前に、本を少し読みます。今日は日本語の本を読みました。むずかしかったですが、おもしろかったです。明日も読みたいと思います。", "new": [{"w": "前", "r": "まえ", "m": "before"}, {"w": "少し", "r": "すこし", "m": "a little"}, {"w": "おもしろい", "r": "おもしろい", "m": "interesting / funny"}], "qs": [{"q": "何時ごろ寝ますか？", "en": "Around what time do they sleep?", "opts": ["十時", "十一時", "十二時"], "ans": 1}, {"q": "本はどうでしたか？", "en": "How was the book?", "opts": ["つまらなかった", "おもしろかった", "やさしかった"], "ans": 1}], "note": "~tai expresses desire: 読みたい means 'I want to read.' Attach tai to the verb stem. と思います softens it to 'I think I want to.'"}, {"title": "週末の朝", "en": "Weekend Morning", "text": "週末は仕事がありません。だから、ゆっくり起きます。土曜日の朝、私は九時ごろ起きました。コーヒーを飲みながら、窓の外を見ました。空がきれいでした。", "new": [{"w": "週末", "r": "しゅうまつ", "m": "weekend"}, {"w": "ゆっくり", "r": "ゆっくり", "m": "slowly / leisurely"}, {"w": "土曜日", "r": "どようび", "m": "Saturday"}, {"w": "窓", "r": "まど", "m": "window"}, {"w": "空", "r": "そら", "m": "sky"}], "qs": [{"q": "何曜日の話ですか？", "en": "What day is the story about?", "opts": ["金曜日", "土曜日", "日曜日"], "ans": 1}, {"q": "窓の外はどうでしたか？", "en": "What was it like outside?", "opts": ["雨が降っていた", "空がきれいだった", "雪が降っていた"], "ans": 1}], "note": "~nagara means 'while doing': コーヒーを飲みながら means 'while drinking coffee.' Attach nagara to the verb stem."}, {"title": "バスの中で", "en": "On the Bus", "text": "私は毎朝バスで会社に行きます。バスの中でスマホでニュースを読みます。今朝のバスはとても混んでいました。席がなかったので、立っていました。バスは二十分ぐらいかかります。", "new": [{"w": "会社", "r": "かいしゃ", "m": "company / office"}, {"w": "スマホ", "r": "スマホ", "m": "smartphone"}, {"w": "席", "r": "せき", "m": "seat"}], "qs": [{"q": "今朝のバスはどうでしたか？", "en": "How was the bus this morning?", "opts": ["すいていた", "混んでいた", "遅かった"], "ans": 1}, {"q": "バスは何分かかりますか？", "en": "How long does the bus take?", "opts": ["十分", "二十分", "三十分"], "ans": 1}], "note": "~ていました is the past progressive: 立っていました means 'was standing.' ので gives a reason: 席がなかったので = 'because there were no seats.'"}, {"title": "昼休み", "en": "Lunch Break", "text": "昼休みは十二時から一時までです。私はいつも会社の近くのレストランで食べます。今日は友達と一緒に食べました。友達はラーメンを注文しました。私はカレーを食べました。とてもおいしかったです。", "new": [{"w": "昼休み", "r": "ひるやすみ", "m": "lunch break"}, {"w": "注文", "r": "ちゅうもん", "m": "order (food)"}, {"w": "ラーメン", "r": "ラーメン", "m": "ramen"}, {"w": "カレー", "r": "カレー", "m": "curry"}], "qs": [{"q": "昼休みは何時から何時まで？", "en": "When is the lunch break?", "opts": ["十一時から十二時", "十二時から一時", "一時から二時"], "ans": 1}, {"q": "私は何を食べましたか？", "en": "What did the narrator eat?", "opts": ["ラーメン", "カレー", "すし"], "ans": 1}], "note": "~から~まで means 'from ~ to ~': 十二時から一時まで = 'from 12 to 1.' Use this for both time ranges and distances."}, {"title": "夜ご飯の後で", "en": "After Dinner", "text": "夕食を食べた後で、テレビを見ます。昨日は日本のドラマを見ました。日本語がすこしむずかしかったですが、だいたいわかりました。お風呂に入って、歯をみがいて、十二時ごろ寝ました。", "new": [{"w": "ドラマ", "r": "ドラマ", "m": "TV drama"}, {"w": "だいたい", "r": "だいたい", "m": "mostly / generally"}, {"w": "お風呂", "r": "おふろ", "m": "bath"}, {"w": "歯", "r": "は", "m": "teeth"}], "qs": [{"q": "昨日の夜、何を見ましたか？", "en": "What did they watch last night?", "opts": ["映画", "ドラマ", "ニュース"], "ans": 1}, {"q": "何時ごろ寝ましたか？", "en": "Around what time did they sleep?", "opts": ["十時", "十一時", "十二時"], "ans": 2}], "note": "~た後で means 'after doing ~': 食べた後で means 'after eating.' Use the plain past form before 後で."}, {"title": "友達の一日", "en": "A Friend's Busy Day", "text": "私の友達の山田さんは毎日とても忙しいです。朝六時に起きて、走ります。朝ごはんを食べて、七時半に家を出ます。電車で大学に行きます。授業は九時から四時までです。授業の後で、アルバイトをします。", "new": [{"w": "忙しい", "r": "いそがしい", "m": "busy"}, {"w": "走る", "r": "はしる", "m": "to run"}, {"w": "大学", "r": "だいがく", "m": "university"}, {"w": "授業", "r": "じゅぎょう", "m": "class / lesson"}, {"w": "アルバイト", "r": "アルバイト", "m": "part-time job"}], "qs": [{"q": "山田さんは何時に起きますか？", "en": "What time does Yamada wake up?", "opts": ["五時", "六時", "七時"], "ans": 1}, {"q": "山田さんはどこで勉強しますか？", "en": "Where does Yamada study?", "opts": ["高校", "大学", "図書館"], "ans": 1}], "note": "~のは turns a verb into a noun: 家に帰るのは means 'the act of returning home.' This lets you make a verb phrase the topic of a sentence."}], "food": [{"title": "好きな食べ物", "en": "Favourite Foods", "text": "私はすしが大好きです。魚も肉も好きです。でも、野菜はあまり好きではありません。特にピーマンが嫌いです。友達はピーマンが好きです。おもしろいですね。", "new": [{"w": "大好き", "r": "だいすき", "m": "really like / love"}, {"w": "特に", "r": "とくに", "m": "especially"}, {"w": "ピーマン", "r": "ピーマン", "m": "green pepper"}, {"w": "嫌い", "r": "きらい", "m": "dislike"}], "qs": [{"q": "私は何が一番好きですか？", "en": "What does the narrator like most?", "opts": ["肉", "野菜", "すし"], "ans": 2}, {"q": "特に嫌いな食べ物は？", "en": "What food is especially disliked?", "opts": ["にんじん", "ピーマン", "たまねぎ"], "ans": 1}], "note": "~はあまり好きではありません = 'don't particularly like ~.' あまり with negative means 'not very much.' が好きです always uses が, not は, before 好き."}, {"title": "レストランで", "en": "At the Restaurant", "text": "昨日、家族とレストランに行きました。私は魚の定食を注文しました。父はステーキを食べました。母はサラダとパスタを頼みました。全部で五千円でした。とてもおいしかったです。また行きたいです。", "new": [{"w": "定食", "r": "ていしょく", "m": "set meal"}, {"w": "ステーキ", "r": "ステーキ", "m": "steak"}, {"w": "パスタ", "r": "パスタ", "m": "pasta"}, {"w": "頼む", "r": "たのむ", "m": "to order / request"}], "qs": [{"q": "私は何を注文しましたか？", "en": "What did the narrator order?", "opts": ["ステーキ", "魚の定食", "パスタ"], "ans": 1}, {"q": "全部でいくらでしたか？", "en": "What was the total?", "opts": ["三千円", "四千円", "五千円"], "ans": 2}], "note": "全部で means 'in total.' 注文する and 頼む both mean to order food — 頼む is more casual."}, {"title": "スーパーで", "en": "At the Supermarket", "text": "今日、スーパーに行きました。野菜と肉と果物を買いました。りんごが安かったので、たくさん買いました。レジで払いました。全部で二千三百円でした。明日は魚を買いに行きます。", "new": [{"w": "りんご", "r": "りんご", "m": "apple"}, {"w": "レジ", "r": "レじ", "m": "checkout / cashier"}, {"w": "払う", "r": "はらう", "m": "to pay"}], "qs": [{"q": "なぜりんごをたくさん買いましたか？", "en": "Why did they buy many apples?", "opts": ["大好きだから", "安かったから", "セールだったから"], "ans": 1}, {"q": "全部でいくらでしたか？", "en": "What was the total?", "opts": ["千八百円", "二千三百円", "三千円"], "ans": 1}], "note": "Verb stem + に行きます expresses purpose: 魚を買いに行きます = 'going to buy fish.' This is one of the most natural ways to say why you are going somewhere."}, {"title": "母の料理", "en": "Mother's Cooking", "text": "私の母はとても料理が上手です。毎日おいしいご飯を作ってくれます。昨日の夜ごはんはすき焼きでした。私は大好きなので、たくさん食べてしまいました。母は「食べすぎですよ」と言いました。でもとてもおいしかったです。", "new": [{"w": "上手", "r": "じょうず", "m": "skilled / good at"}, {"w": "作る", "r": "つくる", "m": "to make / cook"}, {"w": "すき焼き", "r": "すきやき", "m": "sukiyaki"}], "qs": [{"q": "昨日の夜ごはんは何でしたか？", "en": "What was dinner last night?", "opts": ["カレー", "すき焼き", "ラーメン"], "ans": 1}, {"q": "母は何と言いましたか？", "en": "What did mother say?", "opts": ["おいしいですね", "食べすぎですよ", "もっと食べなさい"], "ans": 1}], "note": "~て くれます: 作ってくれます means 'makes it for me.' Te-form + kureru expresses that someone does something for your benefit — it adds a feeling of gratitude."}, {"title": "友達とランチ", "en": "Lunch with a Friend", "text": "今日、友達の花子さんとランチを食べました。カフェに入って、メニューを見ました。私はサンドイッチとアイスコーヒーを注文しました。花子さんはケーキとお茶にしました。二人で話しながら食べました。とても楽しかったです。", "new": [{"w": "メニュー", "r": "メニュー", "m": "menu"}, {"w": "サンドイッチ", "r": "サンドイッチ", "m": "sandwich"}, {"w": "楽しい", "r": "たのしい", "m": "fun / enjoyable"}], "qs": [{"q": "私は何を注文しましたか？", "en": "What did the narrator order?", "opts": ["ケーキとお茶", "サンドイッチとアイスコーヒー", "ラーメン"], "ans": 1}, {"q": "二人はどこで食べましたか？", "en": "Where did the two eat?", "opts": ["レストラン", "カフェ", "公園"], "ans": 1}], "note": "~に しました = 'decided on ~': ケーキにしました = 'she went with cake.' Very common when ordering food or making a choice."}, {"title": "日本の食べ物", "en": "Japanese Food", "text": "日本にはいろいろな食べ物があります。すし、ラーメン、うどん、てんぷら。本当にたくさんあります。私はすしが一番好きです。特に、まぐろが好きです。日本に来てから、毎日日本の食べ物を食べています。毎日食べても、飽きません。", "new": [{"w": "いろいろ", "r": "いろいろ", "m": "various"}, {"w": "うどん", "r": "うどん", "m": "udon noodles"}, {"w": "てんぷら", "r": "てんぷら", "m": "tempura"}, {"w": "まぐろ", "r": "まぐろ", "m": "tuna"}, {"w": "飽きる", "r": "あきる", "m": "to get tired of"}], "qs": [{"q": "私が一番好きな食べ物は？", "en": "What is the narrator's favourite?", "opts": ["ラーメン", "うどん", "すし"], "ans": 2}, {"q": "毎日食べても、どうですか？", "en": "Even eating every day, how is it?", "opts": ["飽きる", "飽きない", "高い"], "ans": 1}], "note": "~ても means 'even if ~': 毎日食べても = 'even if I eat every day.' It sets up a condition that does not change the result."}, {"title": "はじめての料理", "en": "First Time Cooking", "text": "今日、はじめて一人で料理をしました。カレーを作りました。まず、じゃがいもと人参と玉ねぎを切りました。それから、肉といためました。水を入れて、三十分煮ました。むずかしかったですが、うまくできました。", "new": [{"w": "はじめて", "r": "はじめて", "m": "for the first time"}, {"w": "じゃがいも", "r": "じゃがいも", "m": "potato"}, {"w": "人参", "r": "にんじん", "m": "carrot"}, {"w": "玉ねぎ", "r": "たまねぎ", "m": "onion"}, {"w": "いためる", "r": "いためる", "m": "to stir-fry"}, {"w": "煮る", "r": "にる", "m": "to boil / simmer"}], "qs": [{"q": "何を作りましたか？", "en": "What did they make?", "opts": ["ラーメン", "カレー", "みそしる"], "ans": 1}, {"q": "料理はうまくできましたか？", "en": "Did the cooking go well?", "opts": ["だめだった", "うまくできた", "むずかしすぎた"], "ans": 1}], "note": "まず～それから～最後に is the classic sequence: 'first... then... finally.' Essential for describing recipes and any step-by-step process."}, {"title": "おいしいお店", "en": "A Delicious Restaurant", "text": "先週、友達に教えてもらったレストランに行きました。駅から歩いて五分のところにあります。メニューはとてもたくさんありました。私は魚の定食を頼みました。魚がとても新鮮で、おいしかったです。値段も安かったので、またきたいです。", "new": [{"w": "新鮮", "r": "しんせん", "m": "fresh"}, {"w": "値段", "r": "ねだん", "m": "price"}], "qs": [{"q": "レストランはどこにありますか？", "en": "Where is the restaurant?", "opts": ["駅から歩いて五分", "バスで十分", "電車で二十分"], "ans": 0}, {"q": "食べ物はどうでしたか？", "en": "How was the food?", "opts": ["高かった", "おいしかった", "まずかった"], "ans": 1}], "note": "~で、~ connects reasons: 新鮮で、おいしかった means 'it was fresh, and delicious.' Use the de-form of na-adjectives and nouns to connect descriptions."}], "family": [{"title": "私の家族", "en": "My Family", "text": "私の家族は四人です。父と母と妹と私です。父は会社員です。母は先生です。妹は中学生です。みんな仲良しです。", "new": [{"w": "会社員", "r": "かいしゃいん", "m": "office worker"}, {"w": "先生", "r": "せんせい", "m": "teacher"}, {"w": "中学生", "r": "ちゅうがくせい", "m": "middle school student"}, {"w": "仲良し", "r": "なかよし", "m": "close / get along well"}], "qs": [{"q": "家族は何人ですか？", "en": "How many people are in the family?", "opts": ["三人", "四人", "五人"], "ans": 1}, {"q": "母の仕事は何ですか？", "en": "What is mother's job?", "opts": ["会社員", "医者", "先生"], "ans": 2}], "note": "~は~です is the basic 'X is Y' pattern: 父は会社員です = 'My father is an office worker.' The subject is marked with wa and the noun follows with desu."}, {"title": "父と母", "en": "Father and Mother", "text": "私の父は四十五歳です。背が高くて、やさしいです。趣味はゴルフです。母は四十二歳です。料理がとても上手です。毎日おいしいご飯を作ります。父も母も私のことが大好きです。", "new": [{"w": "趣味", "r": "しゅみ", "m": "hobby"}, {"w": "ゴルフ", "r": "ゴルフ", "m": "golf"}, {"w": "上手", "r": "じょうず", "m": "skilled / good at"}], "qs": [{"q": "父の趣味は何ですか？", "en": "What is father's hobby?", "opts": ["テニス", "ゴルフ", "料理"], "ans": 1}, {"q": "母は何が上手ですか？", "en": "What is mother good at?", "opts": ["ゴルフ", "英語", "料理"], "ans": 2}], "note": "~くて connects adjective descriptions: 背が高くて、やさしいです means 'is tall and kind.' Change i-adjective to kute to link two descriptions."}, {"title": "妹のこと", "en": "About My Sister", "text": "私には妹が一人います。名前はさくらです。十四歳です。妹はとても元気で、よく笑います。学校の友達がたくさんいます。音楽が好きで、毎日ピアノをひきます。私は妹のことがとても好きです。", "new": [{"w": "名前", "r": "なまえ", "m": "name"}, {"w": "元気", "r": "げんき", "m": "energetic / healthy"}, {"w": "笑う", "r": "わらう", "m": "to laugh / smile"}, {"w": "音楽", "r": "おんがく", "m": "music"}, {"w": "ひく", "r": "ひく", "m": "to play (instrument)"}], "qs": [{"q": "妹の名前は何ですか？", "en": "What is the sister's name?", "opts": ["花子", "さくら", "田中"], "ans": 1}, {"q": "妹の趣味は何ですか？", "en": "What is the sister's hobby?", "opts": ["テニス", "ピアノ", "ゴルフ"], "ans": 1}], "note": "私には妹が一人います: ni wa emphasises 'as for me, I have.' が+います uses ga (not wa) because います introduces the existence of something new."}, {"title": "週末は家族と", "en": "Weekend with Family", "text": "週末は家族と一緒にいることが多いです。先週の日曜日、家族でピクニックに行きました。お弁当を作って、公園で食べました。天気がよくて、とても気持ちよかったです。子供たちはとても楽しそうでした。", "new": [{"w": "お弁当", "r": "おべんとう", "m": "packed lunch"}, {"w": "公園", "r": "こうえん", "m": "park"}, {"w": "気持ち", "r": "きもち", "m": "feeling"}], "qs": [{"q": "先週の日曜日、どこに行きましたか？", "en": "Where did they go last Sunday?", "opts": ["海", "公園", "山"], "ans": 1}, {"q": "天気はどうでしたか？", "en": "How was the weather?", "opts": ["雨だった", "よかった", "寒かった"], "ans": 1}], "note": "~そうでした means 'seemed / looked ~': 楽しそうでした means 'looked like they were having fun.' Attach sou to the adjective stem."}, {"title": "おじいさんのこと", "en": "About Grandfather", "text": "私の祖父は七十歳です。東京から少し遠いところに住んでいます。毎年、夏休みに会いに行きます。祖父はとても元気で、毎日散歩をしています。私に日本の昔話をよく話してくれます。祖父といる時間がとても好きです。", "new": [{"w": "祖父", "r": "そふ", "m": "grandfather (own)"}, {"w": "夏休み", "r": "なつやすみ", "m": "summer vacation"}, {"w": "散歩", "r": "さんぽ", "m": "walk"}, {"w": "昔話", "r": "むかしばなし", "m": "old story / folktale"}], "qs": [{"q": "祖父はどこに住んでいますか？", "en": "Where does grandfather live?", "opts": ["東京", "東京から遠いところ", "大阪"], "ans": 1}, {"q": "毎年いつ会いに行きますか？", "en": "When do they visit every year?", "opts": ["春休み", "夏休み", "冬休み"], "ans": 1}], "note": "Verb stem + に行きます for purpose: 会いに行きます means 'going to meet (someone).' Different from just ~へ行く which only states a destination."}, {"title": "家族の夕食", "en": "Family Dinner", "text": "私の家族は毎晩一緒に夕食を食べます。父は七時ごろ帰ってきます。母はいつも六時から料理を始めます。夕食のとき、家族みんなで今日あったことを話します。この時間が私は一番好きです。家族と一緒にいると、安心します。", "new": [{"w": "夕食", "r": "ゆうしょく", "m": "dinner"}, {"w": "帰ってくる", "r": "かえってくる", "m": "to come home"}, {"w": "安心", "r": "あんしん", "m": "peace of mind"}], "qs": [{"q": "父は何時ごろ帰りますか？", "en": "When does father come home?", "opts": ["六時", "七時", "八時"], "ans": 1}, {"q": "夕食のとき、家族は何をしますか？", "en": "What does the family do at dinner?", "opts": ["テレビを見る", "話す", "ゲームをする"], "ans": 1}], "note": "~と、~します: 一緒にいると、安心します means 'whenever I am with them, I feel at ease.' と here means 'whenever' for predictable, natural outcomes."}, {"title": "姉の趣味", "en": "Sister's Hobby", "text": "私の姉は写真を撮ることが趣味です。週末になると、カメラを持って外に出ます。先月、姉の写真が雑誌に載りました。家族みんなでとても喜びました。姉はいつも「好きなことを続けることが大事だ」と言います。私もそう思います。", "new": [{"w": "写真", "r": "しゃしん", "m": "photograph"}, {"w": "撮る", "r": "とる", "m": "to take (photo)"}, {"w": "雑誌", "r": "ざっし", "m": "magazine"}, {"w": "喜ぶ", "r": "よろこぶ", "m": "to rejoice / be happy"}, {"w": "続ける", "r": "つづける", "m": "to continue"}], "qs": [{"q": "姉の趣味は何ですか？", "en": "What is the sister's hobby?", "opts": ["料理", "音楽", "写真"], "ans": 2}, {"q": "先月、何がありましたか？", "en": "What happened last month?", "opts": ["雑誌に写真が載った", "賞をもらった", "展覧会があった"], "ans": 0}], "note": "~ことが趣味: 写真を撮ることが趣味 means 'taking photos is my hobby.' こと turns a verb into a noun: 撮る → 撮ること = 'the act of taking.'"}, {"title": "家族旅行", "en": "Family Trip", "text": "先月、家族で京都に旅行に行きました。新幹線に乗って行きました。京都には古いお寺やきれいな庭がたくさんありました。家族でいろいろなところを歩きました。母が「また来たい」と言っていました。家族と一緒に旅行するのはとても楽しいと思います。", "new": [{"w": "京都", "r": "きょうと", "m": "Kyoto"}, {"w": "新幹線", "r": "しんかんせん", "m": "bullet train"}, {"w": "お寺", "r": "おてら", "m": "temple"}, {"w": "庭", "r": "にわ", "m": "garden"}], "qs": [{"q": "どこに旅行に行きましたか？", "en": "Where did they travel?", "opts": ["東京", "大阪", "京都"], "ans": 2}, {"q": "何に乗って行きましたか？", "en": "What did they take to get there?", "opts": ["バス", "電車", "新幹線"], "ans": 2}], "note": "~と言っていました reports what someone was saying: 「また来たい」と言っていました = '(she) was saying she wants to come again.' The quoting particle と follows the exact words."}], "weather": [{"title": "今日の天気", "en": "Today's Weather", "text": "今日はとてもいい天気です。空が青くて、雲がありません。気持ちがいいです。こんな日は外に出たいです。", "new": [{"w": "空", "r": "そら", "m": "sky"}, {"w": "青い", "r": "あおい", "m": "blue"}, {"w": "雲", "r": "くも", "m": "cloud"}, {"w": "気持ち", "r": "きもち", "m": "feeling"}], "qs": [{"q": "今日の天気はどうですか？", "en": "What is the weather like?", "opts": ["雨です", "いい天気です", "曇りです"], "ans": 1}, {"q": "空はどうですか？", "en": "How is the sky?", "opts": ["青くて雲がない", "白くて雲がある", "灰色です"], "ans": 0}], "note": "~くて connects descriptions: 空が青くて、雲がありません means 'the sky is blue and there are no clouds.' Use kute for i-adjectives to link two descriptions."}, {"title": "雨の日", "en": "A Rainy Day", "text": "今日は雨です。朝から雨が降っています。傘を持って学校に行きました。靴が濡れてしまいました。雨の日はあまり好きではありません。早く晴れてほしいです。", "new": [{"w": "降る", "r": "ふる", "m": "to fall (rain/snow)"}, {"w": "傘", "r": "かさ", "m": "umbrella"}, {"w": "靴", "r": "くつ", "m": "shoes"}], "qs": [{"q": "今日はどんな天気ですか？", "en": "What is the weather today?", "opts": ["晴れ", "雨", "雪"], "ans": 1}, {"q": "雨の日は好きですか？", "en": "Do they like rainy days?", "opts": ["大好き", "あまり好きじゃない", "好き"], "ans": 1}], "note": "~てほしい expresses a wish: 晴れてほしい means 'I want it to clear up.' Use this when you want someone or nature to do something — not your own action."}, {"title": "夏の暑さ", "en": "Summer Heat", "text": "今年の夏はとても暑いです。毎日三十五度以上あります。外に出ると、すぐに汗が出ます。水をたくさん飲みます。冷たいものが食べたいです。早く涼しくなってほしいです。", "new": [{"w": "今年", "r": "ことし", "m": "this year"}, {"w": "汗", "r": "あせ", "m": "sweat"}, {"w": "冷たい", "r": "つめたい", "m": "cold (to touch)"}, {"w": "涼しい", "r": "すずしい", "m": "cool / refreshing"}], "qs": [{"q": "今年の夏は何度以上ありますか？", "en": "How hot is it this summer?", "opts": ["三十度", "三十五度", "四十度"], "ans": 1}, {"q": "外に出ると、どうなりますか？", "en": "What happens when they go outside?", "opts": ["寒くなる", "汗が出る", "雨が降る"], "ans": 1}], "note": "~と、(result): 外に出ると、汗が出ます means 'when you go outside, you sweat.' と here means 'whenever' for predictable, automatic outcomes."}, {"title": "冬の朝", "en": "Winter Morning", "text": "今朝は寒かったです。窓の外を見たら、雪が降っていました。とてもきれいでした。でも、寒くて布団から出たくなかったです。やっと起きて、暖かい服を着ました。外は白くてきれいでした。", "new": [{"w": "布団", "r": "ふとん", "m": "futon / bedding"}, {"w": "やっと", "r": "やっと", "m": "finally / at last"}, {"w": "暖かい", "r": "あたたかい", "m": "warm"}, {"w": "白い", "r": "しろい", "m": "white"}], "qs": [{"q": "今朝の外はどうでしたか？", "en": "What was it like outside?", "opts": ["晴れていた", "雪が降っていた", "雨だった"], "ans": 1}, {"q": "布団から出たかったですか？", "en": "Did they want to get out of bed?", "opts": ["すぐ出た", "出たくなかった", "起きられなかった"], "ans": 1}], "note": "~たら means 'when / if': 見たら、雪が降っていました = 'when I looked, it was snowing.' たら often introduces an unexpected discovery."}, {"title": "春が来た", "en": "Spring Has Come", "text": "三月になって、だんだん暖かくなってきました。公園の桜の木に花が咲いています。ピンクと白の花がとてもきれいです。今年は家族でお花見に行く予定です。春は私の一番好きな季節です。", "new": [{"w": "だんだん", "r": "だんだん", "m": "gradually"}, {"w": "桜", "r": "さくら", "m": "cherry blossom"}, {"w": "咲く", "r": "さく", "m": "to bloom"}, {"w": "お花見", "r": "おはなみ", "m": "cherry blossom viewing"}, {"w": "季節", "r": "きせつ", "m": "season"}], "qs": [{"q": "春、公園に何が咲いていますか？", "en": "What is blooming in the park?", "opts": ["梅", "桜", "菊"], "ans": 1}, {"q": "一番好きな季節は何ですか？", "en": "What is their favourite season?", "opts": ["夏", "秋", "春"], "ans": 2}], "note": "~になってきました means 'has gradually become ~': 暖かくなってきました captures a gradual change leading up to now. きた shows the change is ongoing."}, {"title": "台風の日", "en": "Typhoon Day", "text": "昨日は台風が来ました。風がとても強くて、雨もたくさん降りました。学校が休みになりました。一日中、家にいました。テレビで天気予報を見ました。夜になると、風も雨も少しおさまりました。", "new": [{"w": "台風", "r": "たいふう", "m": "typhoon"}, {"w": "強い", "r": "つよい", "m": "strong"}, {"w": "一日中", "r": "いちにちじゅう", "m": "all day long"}, {"w": "天気予報", "r": "てんきよほう", "m": "weather forecast"}], "qs": [{"q": "なぜ学校が休みでしたか？", "en": "Why was school closed?", "opts": ["雪が降ったから", "台風が来たから", "祝日だったから"], "ans": 1}, {"q": "夜になると、どうなりましたか？", "en": "What happened when night came?", "opts": ["風が強くなった", "風と雨がおさまった", "電気が消えた"], "ans": 1}], "note": "~になりました means 'became ~': 休みになりました = 'it became a day off.' なる is essential for expressing any change of state in Japanese."}, {"title": "秋の公園", "en": "Autumn Park", "text": "秋になると、公園の木の葉が赤くなります。黄色と赤の葉がとてもきれいです。先週、友達と公園に行きました。落ち葉の上を歩いて、写真をたくさん撮りました。秋の空気はすずしくて気持ちがよかったです。", "new": [{"w": "落ち葉", "r": "おちば", "m": "fallen leaves"}, {"w": "空気", "r": "くうき", "m": "air"}, {"w": "美しい", "r": "うつくしい", "m": "beautiful"}], "qs": [{"q": "秋になると、公園はどうなりますか？", "en": "What happens to the park in autumn?", "opts": ["花が咲く", "葉が赤くなる", "雪が降る"], "ans": 1}, {"q": "秋の空気はどうでしたか？", "en": "How was the autumn air?", "opts": ["暑かった", "すずしくて気持ちよかった", "寒すぎた"], "ans": 1}], "note": "~と、~なります for seasonal change: 秋になると、葉が赤くなります. と means 'whenever' — used for predictable, recurring natural events."}, {"title": "天気と生活", "en": "Weather and Daily Life", "text": "天気は私たちの生活にとても関係があります。晴れの日は外に出かけたくなります。雨の日は家で本を読んだり、音楽を聞いたりします。夏の暑い日は食欲がなくなることがあります。私はどんな天気でも楽しむようにしています。", "new": [{"w": "関係", "r": "かんけい", "m": "relationship / connection"}, {"w": "食欲", "r": "しょくよく", "m": "appetite"}, {"w": "楽しむ", "r": "たのしむ", "m": "to enjoy"}], "qs": [{"q": "雨の日、何をしますか？", "en": "What do they do on rainy days?", "opts": ["外に出かける", "本を読んだり音楽を聞いたりする", "友達に会いに行く"], "ans": 1}, {"q": "暑い日はどうなることがありますか？", "en": "What sometimes happens on hot days?", "opts": ["よく眠れない", "食欲がなくなる", "汗が出ない"], "ans": 1}], "note": "~たり~たりします lists example actions: 本を読んだり、音楽を聞いたりします = 'do things like reading and listening to music.' It implies there are other activities too."}], "shopping": [{"title": "コンビニで", "en": "At the Convenience Store", "text": "私はよくコンビニに行きます。コンビニにはいろいろなものがあります。今日はおにぎりとお茶を買いました。二百円でした。コンビニはとても便利です。", "new": [{"w": "コンビニ", "r": "コンビニ", "m": "convenience store"}, {"w": "おにぎり", "r": "おにぎり", "m": "rice ball"}, {"w": "便利", "r": "べんり", "m": "convenient"}], "qs": [{"q": "今日、何を買いましたか？", "en": "What did they buy today?", "opts": ["パンとコーヒー", "おにぎりとお茶", "サンドイッチ"], "ans": 1}, {"q": "値段はいくらでしたか？", "en": "How much was it?", "opts": ["百円", "二百円", "三百円"], "ans": 1}], "note": "~にはいろいろなものがあります: には marks the location as topic. 'At the convenience store, there are all sorts of things.' A natural way to describe what exists somewhere."}, {"title": "本屋さん", "en": "The Bookshop", "text": "昨日、本屋に行きました。日本語の本を探していました。むずかしい本もやさしい本もありました。私はN5の練習本を買いました。千二百円でした。早く日本語が上手になりたいです。", "new": [{"w": "本屋", "r": "ほんや", "m": "bookshop"}, {"w": "探す", "r": "さがす", "m": "to look for"}, {"w": "練習", "r": "れんしゅう", "m": "practice"}], "qs": [{"q": "本屋で何を買いましたか？", "en": "What did they buy at the bookshop?", "opts": ["小説", "N5の練習本", "雑誌"], "ans": 1}, {"q": "値段はいくらでしたか？", "en": "How much was it?", "opts": ["八百円", "千円", "千二百円"], "ans": 2}], "note": "~ていました is the past progressive: 探していました means 'was looking for.' This describes an ongoing action in the past, rather than a single completed one."}, {"title": "デパートで", "en": "At the Department Store", "text": "土曜日にデパートに行きました。とても大きくて、いろいろなお店がありました。六階に洋服のお店がありました。かわいいシャツを見つけました。値段は三千円でした。少し高かったですが、買いました。", "new": [{"w": "デパート", "r": "デパート", "m": "department store"}, {"w": "洋服", "r": "ようふく", "m": "Western clothing"}, {"w": "シャツ", "r": "シャツ", "m": "shirt"}, {"w": "見つける", "r": "みつける", "m": "to find"}], "qs": [{"q": "洋服のお店は何階にありましたか？", "en": "Which floor was the shop on?", "opts": ["三階", "六階", "八階"], "ans": 1}, {"q": "シャツを買いましたか？", "en": "Did they buy the shirt?", "opts": ["買わなかった", "高すぎて買えなかった", "高かったが買った"], "ans": 2}], "note": "~が、~ shows contrast: 少し高かったですが、買いました = 'it was a bit expensive, but I bought it.' が softens the contrast more gently than でも."}, {"title": "服を買う", "en": "Buying Clothes", "text": "今日、友達と服を買いに行きました。私は青いジャケットが欲しかったです。いくつかのお店で探しました。三件目のお店でちょうどいいジャケットを見つけました。値段は五千円でした。二人とも満足しました。", "new": [{"w": "ジャケット", "r": "ジャケット", "m": "jacket"}, {"w": "欲しい", "r": "ほしい", "m": "want (a thing)"}], "qs": [{"q": "何件目のお店でジャケットを見つけましたか？", "en": "At which shop did they find it?", "opts": ["一件目", "二件目", "三件目"], "ans": 2}, {"q": "ジャケットの値段は？", "en": "How much was the jacket?", "opts": ["三千円", "四千円", "五千円"], "ans": 2}], "note": "~が欲しい means 'I want ~' for nouns. Compare to ~たい, which is only for wanting to DO something (verbs). 青いジャケットが欲しかった = 'I wanted a blue jacket.'"}, {"title": "スーパーマーケット", "en": "Supermarket Run", "text": "母に頼まれて、スーパーに買い物に行きました。リストには野菜と牛乳と卵が書いてありました。野菜売り場でトマトを選びました。牛乳は二本、卵は一パック買いました。全部で千八百円でした。", "new": [{"w": "牛乳", "r": "ぎゅうにゅう", "m": "milk"}, {"w": "卵", "r": "たまご", "m": "egg"}, {"w": "トマト", "r": "トマト", "m": "tomato"}], "qs": [{"q": "リストに何がありましたか？", "en": "What was on the shopping list?", "opts": ["肉と魚", "野菜と牛乳と卵", "パンとジャム"], "ans": 1}, {"q": "全部でいくらでしたか？", "en": "What was the total?", "opts": ["千五百円", "千八百円", "二千円"], "ans": 1}], "note": "~に頼まれて means 'was asked by ~': 母に頼まれて = 'asked by my mother.' This passive-style expression naturally explains why you are doing an errand for someone."}, {"title": "プレゼントを買う", "en": "Buying a Present", "text": "来週は母の誕生日です。プレゼントを買いに行きました。何がいいかわからなかったので、店員さんに聞きました。店員さんは「スカーフはどうですか」と言いました。きれいな青いスカーフがありました。値段は四千円でした。", "new": [{"w": "誕生日", "r": "たんじょうび", "m": "birthday"}, {"w": "来週", "r": "らいしゅう", "m": "next week"}, {"w": "店員", "r": "てんいん", "m": "store clerk"}, {"w": "スカーフ", "r": "スカーフ", "m": "scarf"}], "qs": [{"q": "なぜ店員さんに聞きましたか？", "en": "Why did they ask the assistant?", "opts": ["値段がわからなかった", "何を買えばいいかわからなかった", "サイズがわからなかった"], "ans": 1}, {"q": "スカーフの色は何色？", "en": "What colour was the scarf?", "opts": ["赤", "白", "青"], "ans": 2}], "note": "~はどうですか is a suggestion: スカーフはどうですか = 'How about a scarf?' A polite, soft way to recommend something to someone."}, {"title": "セールの日", "en": "Sale Day", "text": "今日、デパートのセールがありました。朝から人がたくさんいました。私は洋服が欲しかったので、早く行きました。好きなブランドのコートを見つけました。定価は二万円でしたが、セール価格は一万四千円でした。買うことにしました。", "new": [{"w": "セール", "r": "セール", "m": "sale"}, {"w": "コート", "r": "コート", "m": "coat"}, {"w": "定価", "r": "ていか", "m": "regular price"}], "qs": [{"q": "コートの定価はいくらでしたか？", "en": "What was the regular price?", "opts": ["一万円", "一万四千円", "二万円"], "ans": 2}, {"q": "最終的にどうしましたか？", "en": "What did they decide?", "opts": ["買わなかった", "買うことにした", "もっと安いものを買った"], "ans": 1}], "note": "~ことにしました means 'decided to ~': 買うことにしました = 'decided to buy it.' Expresses a conscious personal decision. Compare to ことになりました (decided by circumstances)."}, {"title": "市場で", "en": "At the Market", "text": "週末の朝、近くの市場に行きました。市場には新鮮な野菜や果物がたくさんありました。八百屋のおじさんが「今日のりんごは甘くておいしいよ」と言いました。試食してみたら、本当においしかったので、六個買いました。地元の人と話しながら買い物するのが楽しいです。", "new": [{"w": "市場", "r": "いちば", "m": "market"}, {"w": "新鮮", "r": "しんせん", "m": "fresh"}, {"w": "甘い", "r": "あまい", "m": "sweet"}, {"w": "試食", "r": "ししょく", "m": "food tasting"}, {"w": "地元", "r": "じもと", "m": "local area"}], "qs": [{"q": "りんごを何個買いましたか？", "en": "How many apples did they buy?", "opts": ["三個", "四個", "六個"], "ans": 2}, {"q": "なぜスーパーより市場を選びますか？", "en": "Why do they choose the market?", "opts": ["安いから", "新鮮でおいしいから", "近いから"], "ans": 1}], "note": "~てみたら means 'when I tried ~': 試食してみたら = 'when I tried the sample.' みる after te-form means 'try doing.' たら introduces the result."}], "transport": [{"title": "電車で行く", "en": "Going by Train", "text": "私は毎日電車で学校に行きます。家から駅まで歩いて五分です。電車は八時十分に来ます。学校の近くの駅でおります。学校まで三十分ぐらいかかります。", "new": [{"w": "歩く", "r": "あるく", "m": "to walk"}, {"w": "降りる", "r": "おりる", "m": "to get off"}, {"w": "かかる", "r": "かかる", "m": "to take (time)"}], "qs": [{"q": "家から駅まで何分かかりますか？", "en": "How long from home to station?", "opts": ["三分", "五分", "十分"], "ans": 1}, {"q": "学校まで何分かかりますか？", "en": "How long does it take to school?", "opts": ["十分", "二十分", "三十分"], "ans": 2}], "note": "~まで歩いて~分: 家から駅まで歩いて五分 = 'five minutes on foot from home to the station.' て here means 'by walking' — an action used as a method of transport."}, {"title": "駅で", "en": "At the Station", "text": "今日、駅で迷いました。どこで乗り換えればいいかわかりませんでした。駅員さんに聞きました。「次の駅で乗り換えてください」と教えてくれました。無事に着きました。", "new": [{"w": "迷う", "r": "まよう", "m": "to get lost / be confused"}, {"w": "駅員", "r": "えきいん", "m": "station staff"}, {"w": "着く", "r": "つく", "m": "to arrive"}], "qs": [{"q": "どうして困りましたか？", "en": "What was the problem?", "opts": ["電車が来なかった", "どこで乗り換えるかわからなかった", "財布がなかった"], "ans": 1}, {"q": "駅員さんはどう言いましたか？", "en": "What did the staff say?", "opts": ["次の駅で降りてください", "次の駅で乗り換えてください", "戻ってください"], "ans": 1}], "note": "~てください is a polite instruction: 乗り換えてください = 'please transfer.' Use te-form + kudasai to politely ask someone to do something."}, {"title": "バスに乗る", "en": "Riding the Bus", "text": "私の家の近くにバス停があります。バスは十五分に一本来ます。今日はバスで図書館に行きました。バスの中は座れました。窓から街の景色を見ました。図書館まで二十分かかりました。", "new": [{"w": "図書館", "r": "としょかん", "m": "library"}, {"w": "座る", "r": "すわる", "m": "to sit"}, {"w": "景色", "r": "けしき", "m": "scenery / view"}, {"w": "帰り", "r": "かえり", "m": "return / way back"}], "qs": [{"q": "バスは何分に一本来ますか？", "en": "How often does the bus come?", "opts": ["十分に一本", "十五分に一本", "二十分に一本"], "ans": 1}, {"q": "バスの中でどうしましたか？", "en": "What did they do on the bus?", "opts": ["本を読んだ", "座って景色を見た", "スマホを見た"], "ans": 1}], "note": "に一本 expresses frequency: 十五分に一本 = 'one bus per 15 minutes.' This standard pattern is used for trains, buses, and anything that runs on a schedule."}, {"title": "道を聞く", "en": "Asking for Directions", "text": "先週、友達の家に行きました。でも、道がわからなくなりました。近くにいたおばさんに道を聞きました。「まっすぐ行って、二つ目の角を右に曲がってください」と教えてくれました。その通りに歩いたら、友達の家が見えました。", "new": [{"w": "角", "r": "かど", "m": "corner"}, {"w": "曲がる", "r": "まがる", "m": "to turn"}, {"w": "見える", "r": "みえる", "m": "to be visible / can see"}], "qs": [{"q": "どうやって道を見つけましたか？", "en": "How did they find the way?", "opts": ["地図を見た", "おばさんに聞いた", "スマホで調べた"], "ans": 1}, {"q": "どこを右に曲がりましたか？", "en": "Where did they turn right?", "opts": ["一つ目の角", "二つ目の角", "三つ目の角"], "ans": 1}], "note": "~つ目 counts ordinal positions: 二つ目 = 'the second one.' まっすぐ行って、~を右に曲がってください is the standard directions formula — essential to memorise."}, {"title": "地下鉄で", "en": "On the Subway", "text": "東京の地下鉄はとても便利です。いろいろな路線があって、どこにでも行けます。でも、はじめは路線図がむずかしかったです。今は慣れました。朝の地下鉄はとても混んでいます。座れないことが多いです。", "new": [{"w": "地下鉄", "r": "ちかてつ", "m": "subway / metro"}, {"w": "慣れる", "r": "なれる", "m": "to get used to"}], "qs": [{"q": "東京の地下鉄はどうですか？", "en": "What is the Tokyo subway like?", "opts": ["むずかしくて使えない", "とても便利", "高い"], "ans": 1}, {"q": "朝の地下鉄の問題は何ですか？", "en": "What is the problem in the morning?", "opts": ["遅い", "汚い", "混んでいて座れない"], "ans": 2}], "note": "~ことが多い means '~ often happens': 座れないことが多い = 'it is often the case that you cannot sit.' More nuanced than よく — it describes a general tendency."}, {"title": "タクシーで", "en": "By Taxi", "text": "先週、夜遅くに帰ることになりました。電車がもう終わっていたので、タクシーに乗りました。運転手さんに行き先を言いました。「渋谷までお願いします」と言いました。タクシーの中は静かでした。料金は二千五百円でした。", "new": [{"w": "運転手", "r": "うんてんしゅ", "m": "driver"}, {"w": "静か", "r": "しずか", "m": "quiet"}, {"w": "料金", "r": "りょうきん", "m": "fare / fee"}], "qs": [{"q": "なぜタクシーに乗りましたか？", "en": "Why did they take a taxi?", "opts": ["バスが混んでいたから", "電車が終わっていたから", "駅が遠かったから"], "ans": 1}, {"q": "料金はいくらでしたか？", "en": "How much was the fare?", "opts": ["千五百円", "二千円", "二千五百円"], "ans": 2}], "note": "~ことになりました means 'it came about that ~': 帰ることになりました = 'it turned out I had to go home.' Implies the situation arose from circumstances, not personal choice."}, {"title": "自転車で", "en": "By Bicycle", "text": "私は自転車が好きです。天気がいい日は、自転車で買い物に行きます。自転車に乗ると、気持ちがいいです。先月、少し遠くの公園まで自転車で行きました。一時間ぐらいかかりましたが、とても楽しかったです。帰りは疲れて、坂道が辛かったです。", "new": [{"w": "自転車", "r": "じてんしゃ", "m": "bicycle"}, {"w": "疲れる", "r": "つかれる", "m": "to get tired"}, {"w": "坂道", "r": "さかみち", "m": "slope / hill"}], "qs": [{"q": "自転車に乗ると、どんな気持ちですか？", "en": "How do they feel cycling?", "opts": ["疲れる", "気持ちがいい", "怖い"], "ans": 1}, {"q": "帰りはどうでしたか？", "en": "How was the way back?", "opts": ["楽しかった", "疲れて坂道が辛かった", "早く着いた"], "ans": 1}], "note": "~が、~ shows contrast in narrative: 楽しかったですが、帰りは疲れました. The 'something is good, but there is a catch' structure is very common in everyday Japanese stories."}, {"title": "旅行の計画", "en": "Travel Plan", "text": "来週、大阪に旅行に行きます。東京から新幹線で行きます。約二時間半かかります。大阪では電車とバスを使うつもりです。大阪城に行きたいです。旅行の前に、しっかり準備をします。大阪の食べ物も楽しみです。", "new": [{"w": "大阪", "r": "おおさか", "m": "Osaka"}, {"w": "新幹線", "r": "しんかんせん", "m": "bullet train"}, {"w": "約", "r": "やく", "m": "approximately"}, {"w": "準備", "r": "じゅんび", "m": "preparation"}, {"w": "楽しみ", "r": "たのしみ", "m": "looking forward to"}], "qs": [{"q": "東京から大阪まで何時間かかりますか？", "en": "How long from Tokyo to Osaka?", "opts": ["一時間", "二時間半", "三時間"], "ans": 1}, {"q": "大阪で何をしますか？", "en": "What will they do in Osaka?", "opts": ["温泉に行く", "大阪城に行く", "ショッピングをする"], "ans": 1}], "note": "~つもりです expresses intention: 電車を使うつもりです = 'I intend to use the train.' Slightly more deliberate and planned than ~たいです."}]};
+var UNITS = [{"id": "daily", "title": "Daily Routines", "ja": "毎日の生活", "icon": "🌅", "color": "#f59e0b"}, {"id": "food", "title": "Food & Eating", "ja": "食べ物と料理", "icon": "🍱", "color": "#ef4444"}, {"id": "family", "title": "Family", "ja": "家族", "icon": "👨‍👩‍👧", "color": "#8b5cf6"}, {"id": "weather", "title": "Weather", "ja": "天気", "icon": "🌤", "color": "#06b6d4"}, {"id": "shopping", "title": "Shopping", "ja": "買い物", "icon": "🛍", "color": "#10b981"}, {"id": "transport", "title": "Getting Around", "ja": "交通・移動", "icon": "🚃", "color": "#3b82f6"}];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var S = {
+screen: ‘home’,
+unit: null,
+pi: 0,
+progress: {},
+lexicon: {},
+wordsRead: 0,
+showFuri: true,
+showGrammar: false,
+phase: ‘read’,
+answers: {},
+submitted: false,
+};
+
+function go(screen, extra) {
+S.screen = screen;
+S.phase = ‘read’;
+S.answers = {};
+S.submitted = false;
+S.showGrammar = false;
+if (extra) Object.assign(S, extra);
+render();
+}
+
+// ── Tokeniser ─────────────────────────────────────────────────────────────────
+var VKEYS = Object.keys(VOCAB).sort(function(a,b){return b.length-a.length});
+function tokenise(text) {
+var tokens = [], i = 0;
+while (i < text.length) {
+var ch = text[i];
+if (ch === ‘\u3002’ || ch === ‘\u3001’ || ch === ‘\uff01’ || ch === ‘\uff1f’) {
+tokens.push({t:‘p’, s:ch}); i++; continue;
+}
+var matched = false;
+for (var k = 0; k < VKEYS.length; k++) {
+var w = VKEYS[k];
+if (w.length > 1 && text.substr(i, w.length) === w) {
+tokens.push({t:‘w’, s:w, r:VOCAB[w][0], m:VOCAB[w][1]});
+i += w.length; matched = true; break;
+}
+}
+if (!matched) {
+var last = tokens[tokens.length-1];
+if (last && last.t === ‘c’) { last.s += ch; }
+else { tokens.push({t:‘c’, s:ch}); }
+i++;
+}
+}
+return tokens;
+}
+
+function esc(s) {
+return String(s).replace(/&/g,’&’).replace(/</g,’<’).replace(/>/g,’>’).replace(/”/g,’"’);
+}
+
+function renderTokens(tokens, newSet) {
+var html = ‘’;
+for (var i = 0; i < tokens.length; i++) {
+var tok = tokens[i];
+if (tok.t === ‘p’) { html += ‘<span class="pc">’ + (tok.s === ‘\u3002’ ? ‘\u3002 ’ : esc(tok.s)) + ‘</span>’; continue; }
+if (tok.t === ‘c’) { html += ‘<span class="pc">’ + esc(tok.s) + ‘</span>’; continue; }
+var isNew = newSet && newSet[tok.s];
+var cls = ‘w’ + (isNew ? ’ nw-highlight’ : ‘’);
+var attrs = ’ class=”’ + cls + ‘” data-w=”’ + esc(tok.s) + ‘” data-r=”’ + esc(tok.r) + ‘” data-m=”’ + esc(tok.m) + ‘”’;
+if (S.showFuri && tok.r !== tok.s) {
+html += ‘<ruby’ + attrs + ‘>’ + esc(tok.s) + ‘<rt>’ + esc(tok.r) + ‘</rt></ruby>’;
+} else {
+html += ‘<span’ + attrs + ‘>’ + esc(tok.s) + ‘</span>’;
+}
+}
+return html;
+}
+
+// ── Gloss ─────────────────────────────────────────────────────────────────────
+function showGloss(word, reading, meaning) {
+document.getElementById(‘gw’).textContent = word;
+document.getElementById(‘gr’).textContent = reading;
+document.getElementById(‘gm’).textContent = meaning;
+document.getElementById(‘gloss’).className = ‘show’;
+}
+function hideGloss() {
+document.getElementById(‘gloss’).className = ‘’;
+}
+
+// ── Vocab sidebar ──────────────────────────────────────────────────────────────
+function showVocab() {
+var entries = Object.keys(S.lexicon).map(function(w){return [w,S.lexicon[w]]}).sort(function(a,b){return b[1].n-a[1].n});
+var col = function(n){return n>=10?’#4ade80’:n>=4?’#f59e0b’:’#6366f1’};
+var st = function(n){return n>=10?‘acquired’:n>=4?‘familiar’:‘exposed’};
+document.getElementById(‘vs-count’).textContent = entries.length + ’ words encountered’;
+var stats = [[‘exposed’,’#6366f1’],[‘familiar’,’#f59e0b’],[‘acquired’,’#4ade80’]];
+var sh = ‘’;
+stats.forEach(function(x){
+var cnt = entries.filter(function(e){return st(e[1].n)===x[0]}).length;
+sh += ‘<div class="vs-stat" style="border:1px solid '+x[1]+'30"><div class="vs-stat-val" style="color:'+x[1]+'">’+cnt+’</div><div class="vs-stat-lbl">’+x[0]+’</div></div>’;
+});
+document.getElementById(‘vs-stats’).innerHTML = sh;
+var lh = ‘’;
+entries.forEach(function(e){
+var c = col(e[1].n);
+lh += ‘<div class="vs-item"><div class="vs-dot" style="background:'+c+'"></div><div style="flex:1"><div><span class="vs-word">’+esc(e[0])+’</span><span class="vs-reading">’+esc(e[1].r)+’</span></div><div class="vs-meaning">’+esc(e[1].m)+’</div></div><div class="vs-count-n" style="color:'+c+'">’+e[1].n+‘x</div></div>’;
+});
+document.getElementById(‘vs-list’).innerHTML = lh;
+document.getElementById(‘vocab-sidebar’).className = ‘show’;
+}
+function hideVocab() {
+document.getElementById(‘vocab-sidebar’).className = ‘’;
+}
+
+// ── Render screens ────────────────────────────────────────────────────────────
+function render() {
+var app = document.getElementById(‘app’);
+hideGloss();
+if (S.screen === ‘home’) app.innerHTML = renderHome();
+else if (S.screen === ‘unit’) app.innerHTML = renderUnit();
+else if (S.screen === ‘reader’) app.innerHTML = renderReader();
+bindEvents();
+}
+
+function header() {
+return ‘<div class="hdr"><div class="logo" onclick="go('home')"><span class="logo-jp">\u8aad\u3080</span><span class="logo-div"></span><span class="logo-en">YOMU · N5</span></div><div class="badge">N5</div></div>’;
+}
+
+function renderHome() {
+var total = 0;
+UNITS.forEach(function(u){total += (S.progress[u.id]||0)});
+var pct = Math.min(100, Math.round(S.wordsRead/3000*100));
+var h = header();
+h += ‘<div class="stat-box">’;
+h += ‘<div class="stat-row">’;
+h += ‘<div class="stat"><div class="stat-label">Words Read</div><div class="stat-val">’+S.wordsRead.toLocaleString()+’</div></div>’;
+h += ‘<div class="stat" style="text-align:center"><div class="stat-label">Vocab</div><div class="stat-val v">’+Object.keys(S.lexicon).length+’</div><button onclick="showVocab()" style="margin-top:2px;background:none;border:1px solid #312e81;border-radius:5px;padding:2px 8px;color:#6366f1;font-size:10px;cursor:pointer">view</button></div>’;
+h += ‘<div class="stat" style="text-align:center"><div class="stat-label">Passages</div><div class="stat-val g">’+total+’</div><div style="font-size:9px;color:#334155;margin-top:2px">of 48</div></div>’;
+h += ‘</div>’;
+h += ‘<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:linear-gradient(90deg,#4f46e5,#818cf8)"></div></div>’;
+h += ‘<div class="prog-label">’+S.wordsRead+’ / 3000 words to complete N5</div>’;
+h += ‘</div>’;
+h += ‘<div style="margin-bottom:12px;font-size:12px;color:#475569">Tap a theme to begin reading</div>’;
+h += ‘<div class="grid2">’;
+UNITS.forEach(function(u){
+var done = S.progress[u.id]||0;
+var pct2 = Math.round(done/8*100);
+h += ‘<div class="card" onclick="go('unit',{unit:''+u.id+''})" style="border-color:'+u.color+'25" onmouseover="this.style.borderColor=''+u.color+'80'" onmouseout="this.style.borderColor=''+u.color+'25'">’;
+h += ‘<div class="uc-icon">’+u.icon+’</div>’;
+h += ‘<div class="uc-title">’+esc(u.title)+’</div>’;
+h += ‘<div class="uc-ja">’+esc(u.ja)+’</div>’;
+h += ‘<div class="uc-prog"><div class="uc-prog-bar"><div class="uc-prog-fill" style="width:'+pct2+'%;background:'+u.color+'"></div></div><div class="uc-prog-label">’+done+’/8</div></div>’;
+h += ‘</div>’;
+});
+h += ‘</div>’;
+return h;
+}
+
+function renderUnit() {
+var uid = S.unit;
+var meta = UNITS.filter(function(u){return u.id===uid})[0];
+var done = S.progress[uid]||0;
+var passages = PASSAGES[uid];
+var h = header();
+h += ‘<button class="back-btn" onclick="go('home')">← All Units</button>’;
+h += ‘<div class="unit-hdr"><div class="unit-icon">’+meta.icon+’</div><div><div class="unit-title">’+esc(meta.title)+’</div><div class="unit-ja">’+esc(meta.ja)+’</div></div></div>’;
+h += ‘<div class="prog-section"><div style="font-size:11px;letter-spacing:2px;color:#334155;text-transform:uppercase;margin-bottom:6px">Progress</div>’;
+h += ‘<div class="prog-bar" style="height:5px"><div class="prog-fill" style="width:'+Math.round(done/8*100)+'%;background:'+meta.color+'"></div></div>’;
+h += ‘<div class="prog-label">’+done+’ of 8 passages complete</div></div>’;
+h += ‘<div class="plist">’;
+passages.forEach(function(p, i){
+var isDone = i < done, isCurrent = i === done, isLocked = i > done;
+var cls = ‘pitem’ + (isDone?’ done’:’’) + (isLocked?’ locked’:’’);
+var onclick = isLocked ? ‘’ : ’ onclick=“startPassage(’+i+’)”’;
+var numBg = isDone?’#14532d’:isCurrent?meta.color+‘20’:’#0f172a’;
+var numBorder = isDone?’#4ade80’:isCurrent?meta.color:’#334155’;
+var numColor = isDone?’#4ade80’:isCurrent?meta.color:’#334155’;
+var numText = isDone?’✓’:’’+(i+1);
+h += ‘<div class=”’+cls+’”’+onclick+’>’;
+h += ‘<div class="pnum" style="background:'+numBg+';border:1px solid '+numBorder+';color:'+numColor+'">’+numText+’</div>’;
+h += ‘<div style="flex:1"><div class="pitem-title">’+esc(p.title)+’</div><div class="pitem-sub">’+esc(p.en)+’ · ‘+p.new.length+’ new words</div></div>’;
+if (!isLocked && !isDone) h += ‘<div class="pitem-arrow" style="color:'+meta.color+'">→</div>’;
+h += ‘</div>’;
+});
+h += ‘</div>’;
+return h;
+}
+
+function startPassage(idx) {
+S.pi = idx;
+// Update lexicon
+var passage = PASSAGES[S.unit][idx];
+var tokens = tokenise(passage.text);
+tokens.forEach(function(tok){
+if (tok.t === ‘w’) {
+if (S.lexicon[tok.s]) S.lexicon[tok.s].n++;
+else S.lexicon[tok.s] = {r:tok.r, m:tok.m, n:1};
+}
+});
+passage.new.forEach(function(nw){
+if (!S.lexicon[nw.w]) S.lexicon[nw.w] = {r:nw.r, m:nw.m, n:1};
+});
+go(‘reader’);
+}
+
+function renderReader() {
+var uid = S.unit;
+var meta = UNITS.filter(function(u){return u.id===uid})[0];
+var passage = PASSAGES[uid][S.pi];
+var tokens = tokenise(passage.text);
+var newSet = {};
+passage.new.forEach(function(nw){newSet[nw.w]=true});
+var h = header();
+// Toolbar
+h += ‘<div class="reader-toolbar">’;
+h += ‘<button class="back-btn" style="padding:0" onclick="go('unit',{unit:''+uid+''})">← Back</button>’;
+h += ‘<div class="toolbar-btns">’;
+h += ‘<button class="tbtn'+(S.showFuri?' on':'')+'" onclick="toggleFuri()">ふり仮名</button>’;
+h += ‘<button class="tbtn" onclick="showVocab()">Vocab ‘+Object.keys(S.lexicon).length+’</button>’;
+h += ‘</div></div>’;
+// Meta
+h += ‘<div class="reader-meta">’;
+h += ‘<div class="reader-unit-label">’+esc(meta.ja)+’ · Passage ‘+(S.pi+1)+’/8</div>’;
+h += ‘<div class="reader-title">’+esc(passage.title)+’</div>’;
+h += ‘<div class="reader-en">’+esc(passage.en)+’</div>’;
+h += ‘</div>’;
+// New words
+if (passage.new.length > 0) {
+h += ‘<div class="new-words"><div class="nw-label">’+passage.new.length+’ New Words</div><div class="nw-list">’;
+passage.new.forEach(function(nw){
+h += ‘<div class="nw-item"><span class="nw-word">’+esc(nw.w)+’</span><span class="nw-meaning">’+esc(nw.m)+’</span></div>’;
+});
+h += ‘</div></div>’;
+}
+if (S.phase === ‘read’) {
+// Passage text
+h += ‘<div class="passage-box" id="pbox">’+renderTokens(tokens, newSet)+’</div>’;
+// Grammar note
+h += ‘<button class="grammar-btn" onclick="toggleGrammar()">📏 Grammar Note (’+(S.showGrammar?‘hide’:‘show’)+’)</button>’;
+if (S.showGrammar) h += ‘<div class="grammar-box">’+esc(passage.note)+’</div>’;
+h += ‘<button class="btn-primary" onclick="go('reader',{phase:'check'})">Check Comprehension →</button>’;
+} else if (S.phase === ‘check’) {
+h += ‘<div class="check-passage">’+esc(passage.text)+’</div>’;
+h += ‘<div class="check-label">Comprehension</div>’;
+passage.qs.forEach(function(q, qi){
+h += ‘<div class="qblock"><div class="qjp">’+esc(q.q)+’</div><div class="qen">’+esc(q.en)+’</div><div class="opts">’;
+q.opts.forEach(function(opt, oi){
+var cls = ‘opt’;
+if (S.submitted) {
+if (oi === q.ans) cls += ’ correct’;
+else if (oi === S.answers[qi] && oi !== q.ans) cls += ’ wrong’;
+} else if (S.answers[qi] === oi) cls += ’ selected’;
+var disabled = S.submitted ? ‘disabled’ : ‘’;
+h += ‘<button class=”’+cls+’” ‘+disabled+’ onclick=“answer(’+qi+’,’+oi+’)”>’+esc(opt)+’</button>’;
+});
+h += ‘</div></div>’;
+});
+if (!S.submitted && Object.keys(S.answers).length === passage.qs.length) {
+h += ‘<button class="btn-primary" onclick="submitAnswers()">Submit</button>’;
+}
+} else if (S.phase === ‘done’) {
+var correct = passage.qs.filter(function(q,i){return S.answers[i]===q.ans}).length;
+h += ‘<div class="done-screen">’;
+h += ‘<div class="done-emoji">’+(correct===passage.qs.length?’🌸’:’✨’)+’</div>’;
+h += ‘<div class="done-score">’+correct+’/’+passage.qs.length+’ correct</div>’;
+h += ‘<div class="done-sub">+’+passage.new.length+’ new words</div>’;
+var isLast = S.pi >= 7;
+h += ‘<button class="btn-primary" onclick="nextPassage()">’+(isLast?‘Unit Complete 🎉’:‘Next Passage →’)+’</button>’;
+h += ‘</div>’;
+}
+return h;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function toggleFuri() {
+S.showFuri = !S.showFuri;
+render();
+}
+function toggleGrammar() {
+S.showGrammar = !S.showGrammar;
+render();
+}
+function answer(qi, oi) {
+if (S.submitted) return;
+S.answers[qi] = oi;
+render();
+}
+function submitAnswers() {
+S.submitted = true;
+var passage = PASSAGES[S.unit][S.pi];
+var wc = tokenise(passage.text).filter(function(t){return t.t===‘w’}).length;
+S.wordsRead += wc;
+render();
+setTimeout(function(){ S.phase = ‘done’; render(); }, 1400);
+}
+function nextPassage() {
+var next = S.pi + 1;
+if (!S.progress[S.unit] || S.progress[S.unit] < next) S.progress[S.unit] = next;
+if (next >= 8) { go(‘unit’, {unit:S.unit}); }
+else { startPassage(next); }
+}
+
+// ── Event delegation for word taps ────────────────────────────────────────────
+function bindEvents() {
+var pbox = document.getElementById(‘pbox’);
+if (pbox) {
+pbox.addEventListener(‘click’, function(e) {
+var el = e.target.closest(’[data-w]’);
+if (el) showGloss(el.getAttribute(‘data-w’), el.getAttribute(‘data-r’), el.getAttribute(‘data-m’));
+else hideGloss();
+});
+}
+document.addEventListener(‘click’, function(e) {
+var gloss = document.getElementById(‘gloss’);
+var pbox2 = document.getElementById(‘pbox’);
+if (gloss && gloss.classList.contains(‘show’) && !gloss.contains(e.target) && (!pbox2 || !pbox2.contains(e.target))) {
+hideGloss();
+}
+}, {once:true});
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+render();
+</script>
+
+</body>
+</html>
