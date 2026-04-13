@@ -190,7 +190,7 @@ Return ONLY a JSON object, no markdown fences:
 “grammarNote”: “One short grammar note in English about a pattern used, max 2 sentences.”
 }`;
 
-const response = await fetch(“https://api.anthropic.com/v1/messages”, {
+const response = await fetch("/api/chat", {
 method: “POST”,
 headers: { “Content-Type”: “application/json” },
 body: JSON.stringify({
